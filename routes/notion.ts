@@ -4,37 +4,42 @@ import { Client } from "@notionhq/client";
 
 const router = express.Router();
 
-const notion = new Client({ auth: process.env.NOTION_KEY });
-const databaseId = process.env.NOTION_STUDENTS_DB;
+const notion = new Client({ auth: process.env.NOTION_API_KEY });
 
-router.post("/students", async (req, res: Response) => {
-  if (!databaseId) return;
+router.get("/students", async (req, res: Response) => {
+  const databaseId = process.env.NOTION_STUDENTS_DB;
 
-  const rows = await notion.databases.query({
+  if (!databaseId) {
+    return;
+  }
+
+  const { results } = await notion.databases.query({
     database_id: databaseId,
     sorts: [
-      {
-        property: "grade",
-        direction: "ascending",
-      },
-      {
-        property: "group",
-        direction: "ascending",
-      },
-      {
-        property: "name",
-        direction: "ascending",
-      },
+      { property: "학년", direction: "ascending" },
+      { property: "학급", direction: "ascending" },
+      { property: "이름", direction: "ascending" },
     ],
   });
 
-  const studentList = rows.results.map((row: any) => {
-    return {
-      name: row.properties.name.title[0].text.content,
-      grade: row.properties.grade.number,
-      group: row.properties.group.number,
-      teacher: row.properties.teacher.rich_text[0].text.content,
-    };
+  const studentList = results.map((result: any, idx: number) => {
+    if ("properties" in result) {
+      const grade = result.properties.학년?.number;
+      const group = result.properties.학급?.number;
+
+      return {
+        id: idx,
+        grade: grade >= 0 ? grade : null,
+        group: group >= 0 ? group : null,
+        name: result.properties.이름.title[0]?.plain_text || null,
+        gender: result.properties.성별.select?.name || null,
+        birth: result.properties.생년월일.date?.start || null,
+        phone: result.properties.연락처.rich_text[0]?.plain_text || null,
+        teacher: result.properties.교사.rich_text[0]?.plain_text || null,
+        address: result.properties.주소.rich_text[0]?.plain_text || null,
+      };
+    }
+    return {};
   });
   res.send(studentList);
 });
