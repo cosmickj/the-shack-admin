@@ -7,14 +7,8 @@ const router = express.Router();
 const notion = new Client({ auth: process.env.NOTION_API_KEY });
 
 router.get("/students", async (req, res: Response) => {
-  const databaseId = process.env.NOTION_STUDENTS_DB;
-
-  if (!databaseId) {
-    return;
-  }
-
   const { results } = await notion.databases.query({
-    database_id: databaseId,
+    database_id: process.env.NOTION_STUDENTS_DB,
     sorts: [
       { property: "학년", direction: "ascending" },
       { property: "학급", direction: "ascending" },
@@ -24,13 +18,10 @@ router.get("/students", async (req, res: Response) => {
 
   const studentList = results.map((result: any, idx: number) => {
     if ("properties" in result) {
-      const grade = result.properties.학년?.number;
-      const group = result.properties.학급?.number;
-
       return {
         id: idx,
-        grade: grade >= 0 ? grade : null,
-        group: group >= 0 ? group : null,
+        grade: result.properties.학년.rich_text[0]?.plain_text || null,
+        group: result.properties.학급.rich_text[0]?.plain_text || null,
         name: result.properties.이름.title[0]?.plain_text || null,
         gender: result.properties.성별.select?.name || null,
         birth: result.properties.생년월일.date?.start || null,
@@ -42,6 +33,31 @@ router.get("/students", async (req, res: Response) => {
     return {};
   });
   res.send(studentList);
+});
+
+router.get("/teachers", async (req, res: Response) => {
+  const { results } = await notion.databases.query({
+    database_id: process.env.NOTION_TEACHERS_DB,
+    sorts: [
+      { property: "학년", direction: "ascending" },
+      { property: "학급", direction: "ascending" },
+      { property: "이름", direction: "ascending" },
+    ],
+  });
+
+  const teacherList = results.map((result: any, idx: number) => {
+    if ("properties" in result) {
+      return {
+        id: idx,
+        grade: result.properties.학년.select?.name || null,
+        group: result.properties.학급.rich_text[0]?.plain_text || null,
+        name: result.properties.이름.title[0]?.plain_text || null,
+        role: result.properties.역할.select?.name || null,
+      };
+    }
+    return {};
+  });
+  res.send(teacherList);
 });
 
 export default router;
