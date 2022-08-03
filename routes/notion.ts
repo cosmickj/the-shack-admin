@@ -8,7 +8,7 @@ const notion = new Client({ auth: process.env.NOTION_API_KEY });
 
 router.get("/students", async (req, res: Response) => {
   const { results } = await notion.databases.query({
-    database_id: process.env.NOTION_STUDENTS_DB,
+    database_id: process.env.NOTION_STUDENTS_DB!,
     sorts: [
       { property: "학년", direction: "ascending" },
       { property: "학급", direction: "ascending" },
@@ -37,10 +37,9 @@ router.get("/students", async (req, res: Response) => {
 
 router.get("/teachers", async (req, res: Response) => {
   const { results } = await notion.databases.query({
-    database_id: process.env.NOTION_TEACHERS_DB,
+    database_id: process.env.NOTION_TEACHERS_DB!,
     sorts: [
-      { property: "학년", direction: "ascending" },
-      { property: "학급", direction: "ascending" },
+      //
       { property: "이름", direction: "ascending" },
     ],
   });
